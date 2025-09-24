@@ -6,14 +6,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to fetch data from the JSON file
     async function fetchData() {
         try {
+            // Fetching from the cleaned file
             const response = await fetch('paribhasha_data.json');
             paribhashaData = await response.json();
-            // Display a welcome message on initial load instead of all content
-            resultsContainer.innerHTML = '<p class="welcome-message">Enter a number or name to search for a Paribhasha.</p>';
         } catch (error) {
             console.error('Error fetching data:', error);
             resultsContainer.innerHTML = '<p class="no-results">Error loading data. Please check the console for details.</p>';
         }
+    }
+
+    // Function to sanitize text by removing asterisks and cite tags
+    function sanitizeText(text) {
+        if (typeof text === 'string') {
+            // This regex removes asterisks and the word 'cite'
+            // followed by a colon and any characters inside curly braces.
+            return text.replace(/[\*\s]*{cite:[^}]+}/gi, '').replace(/\s+/g, ' ').trim();
+        }
+        return text;
     }
 
     // Function to render a single nyaya
@@ -22,13 +31,13 @@ document.addEventListener('DOMContentLoaded', () => {
         nyayaCard.className = 'nyaya-card';
 
         const title = `
-            <h2 class="nyaya-title">Nyaya ${nyaya.nyaya_number}: <span>${nyaya.nyaya_name}</span></h2>
+            <h2 class="nyaya-title">Nyaya ${nyaya.nyaya_number}: <span>${sanitizeText(nyaya.nyaya_name)}</span></h2>
         `;
         nyayaCard.innerHTML += title;
 
         for (const section in nyaya.text) {
             const sectionTitle = section.replace(/_/g, ' ');
-            const content = nyaya.text[section];
+            const content = sanitizeText(nyaya.text[section]);
 
             const sectionDiv = document.createElement('div');
             sectionDiv.innerHTML = `
@@ -41,13 +50,19 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsContainer.appendChild(nyayaCard);
     }
 
+    // Function to display all nyayas
+    function displayAllNyayas() {
+        resultsContainer.innerHTML = '';
+        paribhashaData.forEach(nyaya => renderNyaya(nyaya));
+    }
+
     // Function to handle search logic
     function handleSearch() {
         const query = searchInput.value.toLowerCase().trim();
         resultsContainer.innerHTML = '';
 
         if (!query) {
-            resultsContainer.innerHTML = '<p class="welcome-message">Enter a number or name to search for a Paribhasha.</p>';
+            displayAllNyayas();
             return;
         }
 
@@ -66,6 +81,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize the app
     fetchData().then(() => {
+        displayAllNyayas();
         searchInput.addEventListener('input', handleSearch);
     });
 });
+
