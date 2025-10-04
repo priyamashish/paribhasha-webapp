@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to fetch data from the JSON file
     async function fetchData() {
         try {
-            // Fetching from the cleaned file
             const response = await fetch('paribhasha_data.json');
             paribhashaData = await response.json();
         } catch (error) {
@@ -18,9 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to sanitize text by removing asterisks and cite tags
     function sanitizeText(text) {
         if (typeof text === 'string') {
-            // This regex removes asterisks and the word 'cite'
-            // followed by a colon and any characters inside curly braces.
-            return text.replace(/[\*\s]*{cite:[^}]+}/gi, '').replace(/\s+/g, ' ').trim();
+            // This regular expression targets and removes all asterisks and the word 'cite'
+            // along with any curly braces, in a case-insensitive manner.
+            return text.replace(/[\*\{}]cite/gi, '').replace(/\s+/g, ' ').trim();
         }
         return text;
     }
@@ -50,7 +49,16 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsContainer.appendChild(nyayaCard);
     }
 
-    // Function to display all nyayas
+    // Function to display a welcome message on load
+    function displayWelcomeMessage() {
+        resultsContainer.innerHTML = `
+            <p class="no-results" style="margin-top: 10rem;">
+                Enter a Nyaya number (1-57) or keyword in the search bar above to begin.
+            </p>
+        `;
+    }
+    
+    // Function to display all nyayas (called only when the search field is cleared)
     function displayAllNyayas() {
         resultsContainer.innerHTML = '';
         paribhashaData.forEach(nyaya => renderNyaya(nyaya));
@@ -62,13 +70,16 @@ document.addEventListener('DOMContentLoaded', () => {
         resultsContainer.innerHTML = '';
 
         if (!query) {
-            displayAllNyayas();
+            // If the search bar is cleared, display the welcome message again (optional: could display all)
+            // Reverting to the original function here to allow users to quickly see the full list again
+            displayAllNyayas(); 
             return;
         }
 
         const filteredNyayas = paribhashaData.filter(nyaya => {
             const byNumber = nyaya.nyaya_number.toString().includes(query);
-            const byName = nyaya.nyaya_name.toLowerCase().includes(query);
+            // Check both the original name and the sanitized name for the keyword
+            const byName = sanitizeText(nyaya.nyaya_name).toLowerCase().includes(query); 
             return byNumber || byName;
         });
 
@@ -81,8 +92,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize the app
     fetchData().then(() => {
-        displayAllNyayas();
+        // Change: Display welcome message instead of full list on first load.
+        displayWelcomeMessage(); 
         searchInput.addEventListener('input', handleSearch);
     });
 });
-
